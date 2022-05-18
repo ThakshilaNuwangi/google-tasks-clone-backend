@@ -40,9 +40,9 @@ public class LogInitializer implements ServletContextListener {
             }
 
             if (profile.equals("dev")) {
-                Logger.getLogger("").setLevel(Level.FINE);
+                Logger.getLogger("lk.ijse.dep8.tasks").setLevel(Level.FINE);
             } else {
-                Logger.getLogger("").setLevel(Level.INFO);
+                Logger.getLogger("lk.ijse.dep8.tasks").setLevel(Level.INFO);
             }
 
             Path logDirPath = Paths.get(logDir);
