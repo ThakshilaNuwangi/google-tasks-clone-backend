@@ -56,6 +56,7 @@ public class LogInitializer implements ServletContextListener {
 
             final String path = logDirPath.toAbsolutePath() + File.separator + LocalDate.now() + "-tasks-log-%g.log";
             installFileHandler(path);
+            Logger.getLogger("lk.ijse.dep8.tasks").setUseParentHandlers(false);
 
             ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
             executor.scheduleWithFixedDelay(()->{
