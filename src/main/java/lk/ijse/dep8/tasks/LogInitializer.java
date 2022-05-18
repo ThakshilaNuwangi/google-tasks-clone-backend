@@ -79,8 +79,8 @@ public class LogInitializer implements ServletContextListener {
         try{
             fileHandler = new FileHandler(path, 2*1024*1024, 20, true);
             fileHandler.setFormatter(fileHandler.getFormatter());
-            fileHandler.setLevel(fileHandler.getLevel());
-            Logger.getLogger("").addHandler(fileHandler);
+            fileHandler.setLevel(Logger.getLogger("lk.ijse.dep8.tasks").getLevel());
+            Logger.getLogger("lk.ijse.dep8.tasks").addHandler(fileHandler);
         } catch (IOException e) {
             logger.log(Level.SEVERE, e.getMessage(), e);
         }
