@@ -43,6 +43,8 @@ public class LogInitializer implements ServletContextListener {
                 profile = "dev";
             }
 
+            System.setProperty("app.profile.active", profile);
+
             if (profile.equals("dev")) {
                 Logger.getLogger("lk.ijse.dep8.tasks").setLevel(Level.FINE);
             } else {
