@@ -133,6 +133,22 @@ public class UserServlet extends HttpServlet2 {
         jsonb.toJson(getUser(req), resp.getWriter());
     }
 
+    @Override
+    protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        UserDTO userDTO = getUser(req);
+
+        try (Connection connection = pool.getConnection()) {
+            PreparedStatement stm = connection.prepareStatement("DELETE FROM user WHERE id=?");
+            stm.setString(1, userDTO.getId());
+            if (stm.executeUpdate()!=1) {
+                throw new SQLException("Failed to delete the user");
+            }
+            resp.setStatus(HttpServletResponse.SC_NO_CONTENT);
+        } catch (SQLException e) {
+            throw new ResponseStatusException(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage(), e);
+        }
+    }
+
     private UserDTO getUser(HttpServletRequest req) {
         if (!(req.getPathInfo() != null && (req.getPathInfo().replaceAll("/","").length()==36))){
             throw new ResponseStatusException(404, "Not found");
