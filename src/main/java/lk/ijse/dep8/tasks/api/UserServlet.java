@@ -113,8 +113,10 @@ public class UserServlet extends HttpServlet2 {
             throw new ResponseStatusException(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to register the user");
         } finally {
             try {
-                connection.rollback();
-                connection.setAutoCommit(true);
+                if (!connection.getAutoCommit()){
+                    connection.rollback();
+                    connection.setAutoCommit(true);
+                }
                 connection.close();
             } catch (SQLException e) {
                 e.printStackTrace();
