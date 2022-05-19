@@ -1,5 +1,8 @@
 package lk.ijse.dep8.tasks.api;
 
+import jakarta.json.bind.Jsonb;
+import jakarta.json.bind.JsonbBuilder;
+import lk.ijse.dep8.tasks.dto.UserDTO;
 import lk.ijse.dep8.tasks.util.HttpServlet2;
 import lk.ijse.dep8.tasks.util.ResponseStatusException;
 
@@ -91,6 +94,12 @@ public class UserServlet extends HttpServlet2 {
             }
 
             connection.commit();
+
+            resp.setContentType("application/jsom");
+            UserDTO userDTO = new UserDTO(id, name, email, password, pictureUrl);
+            Jsonb jsonb = JsonbBuilder.create();
+            jsonb.toJson(userDTO, resp.getWriter());
+
         } catch (SQLException e) {
             throw new ResponseStatusException(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to register the user");
         } finally {
