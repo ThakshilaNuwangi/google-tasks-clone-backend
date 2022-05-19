@@ -15,7 +15,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.UUID;
 import java.util.logging.Logger;
 
 @MultipartConfig(location = "/tmp", maxFileSize = 5 * 1024 * 1024)
@@ -60,26 +63,44 @@ public class UserServlet extends HttpServlet2 {
             Files.createDirectory(path);
         }
 
-        try (Connection connection = pool.getConnection()) {
-            PreparedStatement stm = connection.prepareStatement("INSERT INTO user(id, email, password, full_name) VALUES (uuid(),?,?,?)");
-            stm.setString(1, email);
-            stm.setString(2, password);
-            stm.setString(3, name);
+        Connection connection = null;
+        try {
+            connection = pool.getConnection();
+            connection.setAutoCommit(false);
+
+            PreparedStatement stm = connection.prepareStatement("INSERT INTO user(id, email, password, full_name, profile_pic) VALUES (?,?,?,?,?)");
+            String id = UUID.randomUUID().toString();
+            stm.setString(1, id);
+            stm.setString(2, email);
+            stm.setString(3, password);
+            stm.setString(4, name);
+
+            String pictureUrl = req.getScheme() + "://" + req.getServerName() + ":" + req.getServerPort() + req.getContextPath();
+            pictureUrl += "/uploads/" + id;
+
+            stm.setString(5, pictureUrl);
             if (stm.executeUpdate() != 1) {
                 throw new SQLException("Failed to register the user");
             }
 
-            stm = connection.prepareStatement("SELECT * from user WHERE email=?");
-            stm.setString(1, email);
-            ResultSet rst = stm.executeQuery();
-            rst.next();
-            String uuid = rst.getString("id");
+            String picturePath = path.resolve(id).toAbsolutePath().toString();
+            picture.write(picturePath);
 
-            Path imagePath = path.resolve(uuid);
+            if (Files.notExists(Paths.get(picturePath))) {
+                throw new ResponseStatusException(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to save the picture");
+            }
 
-
+            connection.commit();
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new ResponseStatusException(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to register the user");
+        } finally {
+            try {
+                connection.rollback();
+                connection.setAutoCommit(true);
+                connection.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
         }
     }
 }

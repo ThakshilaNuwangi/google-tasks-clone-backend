@@ -39,9 +39,10 @@ public class HttpServlet2 extends HttpServlet {
             if (t instanceof ResponseStatusException) {
                 ResponseStatusException rse = (ResponseStatusException) t;
                 resp.setStatus(rse.getStatus());
-                errorMsg = new HttpResponseErrorMsg(new Date().getTime(), rse.getStatus(), t.getLocalizedMessage(),
-                        sw.toString(), req.getRequestURI());
+                errorMsg = new HttpResponseErrorMsg(new Date().getTime(), rse.getStatus(), sw.toString(), t.getLocalizedMessage(),
+                         req.getRequestURI());
             } else {
+                resp.setStatus(500);
                 errorMsg = new HttpResponseErrorMsg(new Date().getTime(),
                         500,
                         sw.toString(), t.getMessage(), req.getRequestURI());
