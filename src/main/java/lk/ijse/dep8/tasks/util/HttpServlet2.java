@@ -58,7 +58,5 @@ public class HttpServlet2 extends HttpServlet {
         }
     }
 
-    private void doPatch(HttpServletRequest req, HttpServletResponse resp) {
-
-    }
+    protected void doPatch(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {}
 }

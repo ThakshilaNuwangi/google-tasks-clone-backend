@@ -38,7 +38,6 @@ public class UserServlet extends HttpServlet2 {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-
         if (req.getContentType() == null || !req.getContentType().startsWith("multipart/form-data")) {
             resp.sendError(HttpServletResponse.SC_UNSUPPORTED_MEDIA_TYPE, "Invalid content type");
             return;
@@ -83,25 +82,31 @@ public class UserServlet extends HttpServlet2 {
             stm.setString(3, DigestUtils.sha256Hex(password));
             stm.setString(4, name);
 
-            String pictureUrl = req.getScheme() + "://" + req.getServerName() + ":" + req.getServerPort() + req.getContextPath();
-            pictureUrl += "/uploads/" + id;
+            String pictureUrl = null;
+            if (picture !=null) {
+                pictureUrl = req.getScheme() + "://" + req.getServerName() + ":" + req.getServerPort() + req.getContextPath();
+                pictureUrl += "/uploads/" + id;
+            }
 
             stm.setString(5, pictureUrl);
+
             if (stm.executeUpdate() != 1) {
                 throw new SQLException("Failed to register the user");
             }
 
-            String appLocation = getServletContext().getRealPath("/");
-            Path path = Paths.get(appLocation, "uploads");
-            if (Files.notExists(path)) {
-                Files.createDirectory(path);
-            }
+            if (picture!=null) {
+                String appLocation = getServletContext().getRealPath("/");
+                Path path = Paths.get(appLocation, "uploads");
+                if (Files.notExists(path)) {
+                    Files.createDirectory(path);
+                }
 
-            String picturePath = path.resolve(id).toAbsolutePath().toString();
-            picture.write(picturePath);
+                String picturePath = path.resolve(id).toAbsolutePath().toString();
+                picture.write(picturePath);
 
-            if (Files.notExists(Paths.get(picturePath))) {
-                throw new ResponseStatusException(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to save the picture");
+                if (Files.notExists(Paths.get(picturePath))) {
+                    throw new ResponseStatusException(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to save the picture");
+                }
             }
 
             connection.commit();
@@ -156,6 +161,12 @@ public class UserServlet extends HttpServlet2 {
                 logger.warning("Failed to delete the image:"+imagePath.toAbsolutePath());
             }
         }).start();
+    }
+
+    @Override
+    protected void doPatch(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        UserDTO userDTO = getUser(req);
+
     }
 
     private UserDTO getUser(HttpServletRequest req) {
