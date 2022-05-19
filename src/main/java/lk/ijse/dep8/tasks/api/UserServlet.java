@@ -62,12 +62,6 @@ public class UserServlet extends HttpServlet2 {
             throw new ResponseStatusException(HttpServletResponse.SC_BAD_REQUEST, "Invalid picture");
         }
 
-        String appLocation = getServletContext().getRealPath("/");
-        Path path = Paths.get(appLocation, "uploads");
-        if (Files.notExists(path)) {
-            Files.createDirectory(path);
-        }
-
         Connection connection = null;
         try {
             connection = pool.getConnection();
@@ -94,6 +88,12 @@ public class UserServlet extends HttpServlet2 {
             stm.setString(5, pictureUrl);
             if (stm.executeUpdate() != 1) {
                 throw new SQLException("Failed to register the user");
+            }
+
+            String appLocation = getServletContext().getRealPath("/");
+            Path path = Paths.get(appLocation, "uploads");
+            if (Files.notExists(path)) {
+                Files.createDirectory(path);
             }
 
             String picturePath = path.resolve(id).toAbsolutePath().toString();
