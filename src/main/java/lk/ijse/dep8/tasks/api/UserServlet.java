@@ -6,6 +6,7 @@ import lk.ijse.dep8.tasks.dto.UserDTO;
 import lk.ijse.dep8.tasks.util.HttpResponseErrorMsg;
 import lk.ijse.dep8.tasks.util.HttpServlet2;
 import lk.ijse.dep8.tasks.util.ResponseStatusException;
+import org.apache.commons.codec.digest.DigestUtils;
 
 import javax.annotation.Resource;
 import javax.servlet.ServletException;
@@ -84,7 +85,7 @@ public class UserServlet extends HttpServlet2 {
             String id = UUID.randomUUID().toString();
             stm.setString(1, id);
             stm.setString(2, email);
-            stm.setString(3, password);
+            stm.setString(3, DigestUtils.sha256Hex(password));
             stm.setString(4, name);
 
             String pictureUrl = req.getScheme() + "://" + req.getServerName() + ":" + req.getServerPort() + req.getContextPath();
