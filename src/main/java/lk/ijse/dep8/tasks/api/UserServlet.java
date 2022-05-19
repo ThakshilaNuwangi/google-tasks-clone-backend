@@ -147,6 +147,15 @@ public class UserServlet extends HttpServlet2 {
         } catch (SQLException e) {
             throw new ResponseStatusException(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage(), e);
         }
+
+        new Thread(()->{
+            Path imagePath = Paths.get(getServletContext().getRealPath("/"), "uploads", userDTO.getId());
+            try {
+                Files.deleteIfExists(imagePath);
+            } catch (IOException e) {
+                logger.warning("Failed to delete the image:"+imagePath.toAbsolutePath());
+            }
+        }).start();
     }
 
     private UserDTO getUser(HttpServletRequest req) {
