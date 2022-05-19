@@ -165,7 +165,81 @@ public class UserServlet extends HttpServlet2 {
 
     @Override
     protected void doPatch(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        if (req.getContentType() == null || !req.getContentType().startsWith("multipart/form-data")) {
+            resp.sendError(HttpServletResponse.SC_UNSUPPORTED_MEDIA_TYPE, "Invalid content type");
+            return;
+        }
+
         UserDTO userDTO = getUser(req);
+
+        String name = req.getParameter("name");
+        String password = req.getParameter("password");
+        Part picture = req.getPart("picture");
+
+        if (name == null || !name.matches("[A-Za-z ]+")) {
+            throw new ResponseStatusException(HttpServletResponse.SC_BAD_REQUEST, "Invalid name or name is empty");
+        } else if (password == null || password.trim().isEmpty()) {
+            throw new ResponseStatusException(HttpServletResponse.SC_BAD_REQUEST, "Invalid password or password is empty");
+        } else if (picture != null && !picture.getContentType().startsWith("image")) {
+            throw new ResponseStatusException(HttpServletResponse.SC_BAD_REQUEST, "Invalid picture");
+        }
+
+        Connection connection=null;
+        try {
+            connection = pool.getConnection();
+            connection.setAutoCommit(false);
+
+            PreparedStatement stm = connection.prepareStatement("UPDATE user SET full_name=?, password=?, profile_pic=? WHERE id=?");
+            stm.setString(1, name);
+            stm.setString(2, DigestUtils.sha256Hex(password));
+
+            String pictureUrl = null;
+            if (picture != null) {
+                pictureUrl = req.getScheme() + "://" + req.getServerName() + ":"
+                        + req.getServerPort() + req.getContextPath();
+                pictureUrl += "/uploads/" + userDTO.getId();
+            }
+            stm.setString(3, pictureUrl);
+            stm.setString(4, userDTO.getId());
+
+            if (stm.executeUpdate()!=1) {
+                throw new SQLException("Failed to update the user");
+            }
+
+            String appLocation = getServletContext().getRealPath("/");
+            Path path = Paths.get(appLocation, "uploads");
+            Path picturePath = path.resolve(userDTO.getId());
+
+            if (picture != null) {
+                if (Files.notExists(path)) {
+                    Files.createDirectory(path);
+                }
+
+                Files.deleteIfExists(picturePath);
+                picture.write(picturePath.toAbsolutePath().toString());
+
+                if (Files.notExists(picturePath)) {
+                    throw new ResponseStatusException(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to save the picture");
+                }
+            } else {
+                Files.deleteIfExists(picturePath);
+            }
+
+            connection.commit();
+            resp.setStatus(204);
+        } catch (SQLException e) {
+            throw new ResponseStatusException(500, e.getMessage(), e);
+        } finally {
+            try {
+                if (!connection.getAutoCommit()) {
+                    connection.rollback();
+                    connection.setAutoCommit(true);
+                }
+                connection.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
 
     }
 
