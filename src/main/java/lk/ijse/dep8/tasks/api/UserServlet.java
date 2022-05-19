@@ -105,7 +105,7 @@ public class UserServlet extends HttpServlet2 {
 
             connection.commit();
 
-            resp.setContentType("application/jsom");
+            resp.setContentType("application/json");
             UserDTO userDTO = new UserDTO(id, name, email, password, pictureUrl);
             Jsonb jsonb = JsonbBuilder.create();
             jsonb.toJson(userDTO, resp.getWriter());
