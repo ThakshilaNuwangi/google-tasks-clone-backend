@@ -2,7 +2,6 @@ package lk.ijse.dep8.tasks.util;
 
 import jakarta.json.bind.Jsonb;
 import jakarta.json.bind.JsonbBuilder;
-import org.apache.commons.httpclient.HttpStatus;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -24,8 +23,12 @@ public class HttpServlet2 extends HttpServlet {
         try {
             super.service(req, resp);
         } catch (Throwable t) {
-            logger.logp(Level.SEVERE, t.getStackTrace()[0].getClassName(),
-                    t.getStackTrace()[0].getMethodName(), t.getMessage(), t);
+            if (!(t instanceof ResponseStatusException &&
+                    (((ResponseStatusException)t).getStatus() >= 400 &&
+                            ((ResponseStatusException)t).getStatus() < 500))){
+                logger.logp(Level.SEVERE, t.getStackTrace()[0].getClassName(),
+                        t.getStackTrace()[0].getMethodName(), t.getMessage(), t);
+            }
 
             StringWriter sw = new StringWriter();
             PrintWriter pw = new PrintWriter(sw);
