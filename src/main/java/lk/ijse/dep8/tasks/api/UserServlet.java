@@ -3,6 +3,7 @@ package lk.ijse.dep8.tasks.api;
 import jakarta.json.bind.Jsonb;
 import jakarta.json.bind.JsonbBuilder;
 import lk.ijse.dep8.tasks.dto.UserDTO;
+import lk.ijse.dep8.tasks.util.HttpResponseErrorMsg;
 import lk.ijse.dep8.tasks.util.HttpServlet2;
 import lk.ijse.dep8.tasks.util.ResponseStatusException;
 
@@ -69,9 +70,17 @@ public class UserServlet extends HttpServlet2 {
         Connection connection = null;
         try {
             connection = pool.getConnection();
+
+            PreparedStatement stm = connection.prepareStatement("SELECT id FROM user WHERE email=?");
+            stm.setString(1, email);
+
+            if (stm.executeQuery().next()) {
+                throw new ResponseStatusException(HttpServletResponse.SC_CONFLICT, "User has been already registered");
+            }
+
             connection.setAutoCommit(false);
 
-            PreparedStatement stm = connection.prepareStatement("INSERT INTO user(id, email, password, full_name, profile_pic) VALUES (?,?,?,?,?)");
+            stm = connection.prepareStatement("INSERT INTO user(id, email, password, full_name, profile_pic) VALUES (?,?,?,?,?)");
             String id = UUID.randomUUID().toString();
             stm.setString(1, id);
             stm.setString(2, email);
