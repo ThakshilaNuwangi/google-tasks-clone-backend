@@ -22,6 +22,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.UUID;
 import java.util.logging.Logger;
@@ -122,6 +123,41 @@ public class UserServlet extends HttpServlet2 {
             } catch (SQLException e) {
                 e.printStackTrace();
             }
+        }
+    }
+
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        Jsonb jsonb = JsonbBuilder.create();
+        resp.setContentType("application/json");
+        jsonb.toJson(getUser(req), resp.getWriter());
+    }
+
+    private UserDTO getUser(HttpServletRequest req) {
+        if (!(req.getPathInfo() != null && (req.getPathInfo().replaceAll("/","").length()==36))){
+            throw new ResponseStatusException(404, "Not found");
+        }
+
+        String userId = req.getPathInfo().replaceAll("/","");
+
+        try (Connection connection = pool.getConnection()) {
+            PreparedStatement stm = connection.prepareStatement("SELECT * FROM user WHERE id=?");
+            stm.setString(1, userId);
+            ResultSet rst = stm.executeQuery();
+            if (!rst.next()) {
+                throw new ResponseStatusException(HttpServletResponse.SC_NOT_FOUND, "Invalid user Id");
+            } else {
+                String name = rst.getString("full_name");
+                String email = rst.getString("email");
+                String password = rst.getString("password");
+                String picture = rst.getString("profile_pic");
+
+                UserDTO userDTO = new UserDTO(userId, name, email, password, picture);
+                return userDTO;
+            }
+
+        } catch (SQLException e) {
+            throw new ResponseStatusException(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to fetch the user info");
         }
     }
 }
