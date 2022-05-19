@@ -1,5 +1,9 @@
 package lk.ijse.dep8.tasks.util;
 
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletResponse;
+import java.util.Arrays;
+
 public class HttpResponseErrorMsg {
     private long timeStamp;
     private int status;
@@ -11,10 +15,9 @@ public class HttpResponseErrorMsg {
     public HttpResponseErrorMsg() {
     }
 
-    public HttpResponseErrorMsg(long timeStamp, int status, String error, String exception, String message, String path) {
+    public HttpResponseErrorMsg(long timeStamp, int status, String exception, String message, String path) {
         this.timeStamp = timeStamp;
         this.status = status;
-        this.error = error;
         this.exception = exception;
         this.message = message;
         this.path = path;
@@ -37,11 +40,15 @@ public class HttpResponseErrorMsg {
     }
 
     public String getError() {
-        return error;
-    }
-
-    public void setError(String error) {
-        this.error = error;
+        return Arrays.asList(HttpServletResponse.class.getDeclaredFields())
+                .stream().filter(field -> {
+                    try {
+                        return ((int) field.get(HttpServletResponse.class)) == status;
+                    } catch (IllegalAccessException e) {
+                        return false;
+                    }
+                }).findFirst().map(field -> field.getName().replaceFirst("SC_", "")
+                        .replace("_", " ")).orElse("Internal Server Error");
     }
 
     public String getException() {
@@ -73,7 +80,6 @@ public class HttpResponseErrorMsg {
         return "HttpResponseErrorMsg{" +
                 "timeStamp=" + timeStamp +
                 ", status=" + status +
-                ", error='" + error + '\'' +
                 ", exception='" + exception + '\'' +
                 ", message='" + message + '\'' +
                 ", path='" + path + '\'' +

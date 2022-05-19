@@ -12,6 +12,6 @@ import java.io.IOException;
 public class TestServlet extends HttpServlet2 {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        throw new ResponseStatusException(HttpServletResponse.SC_BAD_REQUEST, "Something goes bad");
+        throw new ResponseStatusException(400, "Something goes bad");
     }
 }
