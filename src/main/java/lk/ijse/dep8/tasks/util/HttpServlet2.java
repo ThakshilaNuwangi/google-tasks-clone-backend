@@ -21,7 +21,11 @@ public class HttpServlet2 extends HttpServlet {
     @Override
     protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         try {
-            super.service(req, resp);
+            if (req.getMethod().equals("PATCH")){
+                doPatch(req, resp);
+            }else{
+                super.service(req, resp);
+            }
         } catch (Throwable t) {
             if (!(t instanceof ResponseStatusException &&
                     (((ResponseStatusException)t).getStatus() >= 400 &&
@@ -39,9 +43,10 @@ public class HttpServlet2 extends HttpServlet {
             if (t instanceof ResponseStatusException) {
                 ResponseStatusException rse = (ResponseStatusException) t;
                 resp.setStatus(rse.getStatus());
-                errorMsg = new HttpResponseErrorMsg(new Date().getTime(), rse.getStatus(), t.getLocalizedMessage(),
-                        sw.toString(), req.getRequestURI());
+                errorMsg = new HttpResponseErrorMsg(new Date().getTime(), rse.getStatus(), sw.toString(), t.getLocalizedMessage(),
+                         req.getRequestURI());
             } else {
+                resp.setStatus(500);
                 errorMsg = new HttpResponseErrorMsg(new Date().getTime(),
                         500,
                         sw.toString(), t.getMessage(), req.getRequestURI());
@@ -52,4 +57,6 @@ public class HttpServlet2 extends HttpServlet {
             jsonb.toJson(errorMsg, resp.getWriter());
         }
     }
+
+    protected void doPatch(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {}
 }
