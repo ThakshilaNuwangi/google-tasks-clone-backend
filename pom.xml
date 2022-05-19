@@ -56,6 +56,14 @@
             <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
+        <!--&lt;!&ndash; https://mvnrepository.com/artifact/commons-httpclient/commons-httpclient &ndash;&gt;
+        <dependency>
+            <groupId>commons-httpclient</groupId>
+            <artifactId>commons-httpclient</artifactId>
+            <version>3.1</version>
+        </dependency>-->
+
+
     </dependencies>
 
     <build>

@@ -15,6 +15,7 @@ import java.util.Properties;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.ConsoleHandler;
 import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -27,6 +28,9 @@ public class LogInitializer implements ServletContextListener {
 
     @Override
     public void contextInitialized(ServletContextEvent sce) {
+
+        Logger.getLogger("lk.ijse.dep8.tasks").addHandler(new ConsoleHandler());
+
         try {
             final Properties prop = new Properties();
             prop.load(this.getClass().getResourceAsStream("/application.properties"));
@@ -38,6 +42,8 @@ public class LogInitializer implements ServletContextListener {
                 logger.warning("Invalid profile has been activated and fall back to dev");
                 profile = "dev";
             }
+
+            System.setProperty("app.profile.active", profile);
 
             if (profile.equals("dev")) {
                 Logger.getLogger("lk.ijse.dep8.tasks").setLevel(Level.FINE);
