@@ -7,4 +7,14 @@
     <resource-env-ref>
         <resource-env-ref-name>jdbc/pool</resource-env-ref-name>
     </resource-env-ref>
+
+    <servlet>
+        <servlet-name>UserServlet</servlet-name>
+        <servlet-class>lk.ijse.dep8.tasks.api.UserServlet</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>TaskListServlet</servlet-name>
+        <servlet-class>lk.ijse.dep8.tasks.api.TaskListServlet</servlet-class>
+    </servlet>
 </web-app>
