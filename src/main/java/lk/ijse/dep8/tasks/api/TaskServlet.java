@@ -9,5 +9,8 @@ import java.io.IOException;
 
 @WebServlet(name = "TaskServlet")
 public class TaskServlet extends HttpServlet2 {
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 
+    }
 }
