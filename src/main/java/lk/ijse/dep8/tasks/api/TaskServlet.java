@@ -3,6 +3,7 @@ package lk.ijse.dep8.tasks.api;
 import jakarta.json.bind.Jsonb;
 import jakarta.json.bind.JsonbBuilder;
 import jakarta.json.bind.JsonbException;
+import lk.ijse.dep8.tasks.dto.TaskDTO;
 import lk.ijse.dep8.tasks.dto.TaskListDTO;
 import lk.ijse.dep8.tasks.util.HttpServlet2;
 import lk.ijse.dep8.tasks.util.ResponseStatusException;
@@ -45,7 +46,7 @@ public class TaskServlet extends HttpServlet2 {
             throw new ResponseStatusException(HttpServletResponse.SC_UNSUPPORTED_MEDIA_TYPE, "Invalid content type or content type is empty");
         }
 
-        String pattern = "^/([A-Fa-f0-9\\-]{36})/lists/\\d+/tasks/?$";
+        String pattern = "^/([A-Fa-f0-9\\-]{36})/lists/(\\d+)/tasks/?$";
         if (!req.getPathInfo().matches(pattern)) {
             System.out.println(req.getPathInfo().matches(pattern));
             throw new ResponseStatusException(HttpServletResponse.SC_METHOD_NOT_ALLOWED, "Invalid end point for POST request");
@@ -53,33 +54,103 @@ public class TaskServlet extends HttpServlet2 {
         Matcher matcher = Pattern.compile(pattern).matcher(req.getPathInfo());
         matcher.find();
         String userId = matcher.group(1);
+        int taskListId = Integer.parseInt(matcher.group(2));
 
-        try (Connection connection = pool.get().getConnection()) {
+        Connection connection=null;
+        try {
+            connection = pool.get().getConnection();
+
+            PreparedStatement stm = connection.prepareStatement("SELECT * FROM task_list t WHERE t.id=? AND t.user_id=?");
+            stm.setInt(1, taskListId);
+            stm.setString(2, userId);
+            if (!stm.executeQuery().next()) {
+                throw new ResponseStatusException(HttpServletResponse.SC_NOT_FOUND, "Invalid user id or task id");
+            }
+
             Jsonb jsonb = JsonbBuilder.create();
-            TaskListDTO taskListDTO = jsonb.fromJson(req.getReader(), TaskListDTO.class);
+            TaskDTO task = jsonb.fromJson(req.getReader(), TaskDTO.class);
 
-            if (taskListDTO.getTitle().trim().isEmpty()) {
+            if (task.getTitle()==null || task.getTitle().trim().isEmpty()) {
                 throw new ResponseStatusException(HttpServletResponse.SC_BAD_REQUEST, "Invalid title or title is empty");
             }
+            task.setPosition(0);
+            task.setStatus(TaskDTO.Status.NEEDS_ACTION.toString());
+            connection.setAutoCommit(false);
 
-            PreparedStatement stm = connection.prepareStatement("INSERT INTO task_list (name, user_id) VALUES (?,?)", Statement.RETURN_GENERATED_KEYS);
-            stm.setString(1, taskListDTO.getTitle());
-            stm.setString(2, userId);
+            pushDown(connection, 0);
+            stm = connection.prepareStatement("INSERT INTO task (title, details, position, status,task_list_id) VALUES (?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
+            stm.setString(1, task.getTitle());
+            stm.setString(2, task.getNotes());
+            stm.setInt(3, task.getPosition());
+            stm.setString(4, task.getStatus().toString());
+            stm.setInt(5, taskListId);
 
             if (stm.executeUpdate()!=1) {
-                throw new SQLException("Failed to save the task list");
+                throw new SQLException("Failed to save the task");
             }
 
-            rst = stm.getGeneratedKeys();
+            ResultSet rst = stm.getGeneratedKeys();
             rst.next();
-            taskListDTO.setId(rst.getInt(1));
+            task.setId(rst.getInt(1));
+
+            connection.setAutoCommit(true);
 
             resp.setContentType("application/json");
             resp.setStatus(HttpServletResponse.SC_CREATED);
-            jsonb.toJson(taskListDTO,resp.getWriter());
+            jsonb.toJson(task,resp.getWriter());
 
         } catch (SQLException | JsonbException e) {
             e.printStackTrace();
+        } finally {
+            try {
+                if (!connection.getAutoCommit()) {
+                    connection.rollback();
+                    connection.setAutoCommit(true);
+                }
+                connection.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private void pushDown(Connection connection, int position) throws SQLException {
+        PreparedStatement stm = connection.prepareStatement("UPDATE task t SET position = position+1 WHERE t.position>=? ORDER BY t.position");
+        stm.setInt(1, position);
+        stm.executeUpdate();
+    }
+
+    private TaskDTO getTask(HttpServletRequest req) {
+        String pattern = "/([A-Fa-f0-9\\-]{36})/lists/(\\d+)/tasks/(\\d+)/?";
+        if (!req.getPathInfo().matches(pattern)) {
+            throw new ResponseStatusException(HttpServletResponse.SC_METHOD_NOT_ALLOWED,
+                    String.format("Invalid end point for %s request", req.getMethod()));
+        }
+        Matcher matcher = Pattern.compile(pattern).matcher(req.getPathInfo());
+        matcher.find();
+        String userId = matcher.group(1);
+        int taskListId = Integer.parseInt(matcher.group(2));
+        int taskId = Integer.parseInt(matcher.group(3));
+
+        try (Connection connection = pool.get().getConnection()) {
+            PreparedStatement stm = connection.
+                    prepareStatement("SELECT * FROM task_list tl INNER JOIN task t WHERE t.id=? AND tl.id=? AND tl.user_id=?");
+            stm.setInt(1, taskId);
+            stm.setInt(2, taskListId);
+            stm.setString(3, userId);
+            ResultSet rst = stm.executeQuery();
+            if (rst.next()) {
+                int id = rst.getInt("id");
+                String title = rst.getString("title");
+                String details = rst.getString("details");
+                int position = rst.getInt("position");
+                String status = rst.getString("status");
+                return new TaskDTO(id, title,position, details, status);
+            } else {
+                throw new ResponseStatusException(404, "Invalid user id or task id");
+            }
+        } catch (SQLException e) {
+            throw new ResponseStatusException(500, "Failed to fetch task details");
         }
     }
 }

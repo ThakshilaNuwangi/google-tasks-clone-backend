@@ -61,7 +61,7 @@ public class TaskListServlet extends HttpServlet2 {
             Jsonb jsonb = JsonbBuilder.create();
             TaskListDTO taskListDTO = jsonb.fromJson(req.getReader(), TaskListDTO.class);
 
-            if (taskListDTO.getTitle().trim().isEmpty()) {
+            if (taskListDTO.getTitle()==null || taskListDTO.getTitle().trim().isEmpty()) {
                 throw new ResponseStatusException(HttpServletResponse.SC_BAD_REQUEST, "Invalid title or title is empty");
             }
 
