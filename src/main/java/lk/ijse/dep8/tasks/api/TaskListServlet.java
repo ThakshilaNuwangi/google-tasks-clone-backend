@@ -91,10 +91,45 @@ public class TaskListServlet extends HttpServlet2 {
 
     @Override
     protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-
+        TaskListDTO taskList = getTaskList(req);
+        try (Connection connection = pool.get().getConnection()) {
+            PreparedStatement stm = connection.prepareStatement("DELETE FROM task_list WHERE id=?");
+            stm.setInt(1, taskList.getId());
+            if (stm.executeUpdate()!=1) {
+                throw new SQLException("Failed to delete the task list");
+            }
+            resp.setStatus(HttpServletResponse.SC_NO_CONTENT);
+        } catch (SQLException e) {
+            throw new ResponseStatusException(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage(), e);
+        }
     }
 
-    private TaskListDTO getTaskListDTO(){
+    private TaskListDTO getTaskList(HttpServletRequest req) {
+        String pattern = "/([A-Fa-f0-9\\-]{36})/lists/(\\d+)/?";
+        if (!req.getPathInfo().matches(pattern)) {
+            throw new ResponseStatusException(HttpServletResponse.SC_METHOD_NOT_ALLOWED,
+                    String.format("Invalid end point for %s request", req.getMethod()));
+        }
+        Matcher matcher = Pattern.compile(pattern).matcher(req.getPathInfo());
+        matcher.find();
+        String userId = matcher.group(1);
+        int taskListId = Integer.parseInt(matcher.group(2));
 
+        try (Connection connection = pool.get().getConnection()) {
+            PreparedStatement stm = connection.
+                    prepareStatement("SELECT * FROM task_list t WHERE t.id=? AND t.user_id=?");
+            stm.setInt(1, taskListId);
+            stm.setString(2, userId);
+            ResultSet rst = stm.executeQuery();
+            if (rst.next()) {
+                int id = rst.getInt("id");
+                String title = rst.getString("name");
+                return new TaskListDTO(id, title, userId);
+            } else {
+                throw new ResponseStatusException(404, "Invalid user id or task list id");
+            }
+        } catch (SQLException e) {
+            throw new ResponseStatusException(500, "Failed to fetch task list details");
+        }
     }
 }
