@@ -25,6 +25,7 @@ public class LogInitializer implements ServletContextListener {
 
     private final Logger logger = Logger.getLogger(LogInitializer.class.getName());
     private FileHandler fileHandler;
+    private ScheduledExecutorService executor;
 
     @Override
     public void contextInitialized(ServletContextEvent sce) {
@@ -64,7 +65,7 @@ public class LogInitializer implements ServletContextListener {
             installFileHandler(path);
             Logger.getLogger("lk.ijse.dep8.tasks").setUseParentHandlers(false);
 
-            ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+            executor = Executors.newSingleThreadScheduledExecutor();
             executor.scheduleWithFixedDelay(()->{
                 installFileHandler(path);
             }, /*StartTime*/ Duration.between(LocalTime.now(), LocalTime.MIDNIGHT).toMillis(),
@@ -74,6 +75,11 @@ public class LogInitializer implements ServletContextListener {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    @Override
+    public void contextDestroyed(ServletContextEvent sce) {
+        executor.shutdownNow();
     }
 
     private void installFileHandler(String path){
