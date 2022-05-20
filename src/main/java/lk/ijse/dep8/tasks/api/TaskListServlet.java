@@ -47,7 +47,7 @@ public class TaskListServlet extends HttpServlet2 {
             throw new ResponseStatusException(HttpServletResponse.SC_UNSUPPORTED_MEDIA_TYPE, "Invalid content type or content type is empty");
         }
 
-        String pattern = "/([A-Fa-f0-9\\-]{36})/lists/?";
+        String pattern = "^/([A-Fa-f0-9\\-]{36})/lists/?$";
         if (!req.getPathInfo().matches(pattern)) {
             System.out.println(req.getPathInfo().matches(pattern));
             throw new ResponseStatusException(HttpServletResponse.SC_METHOD_NOT_ALLOWED, "Invalid end point for POST request");
@@ -139,7 +139,7 @@ public class TaskListServlet extends HttpServlet2 {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        String pattern = "/([A-Fa-f0-9\\-]{36})/lists/?";
+        String pattern = "^/([A-Fa-f0-9\\-]{36})/lists/?$";
         Matcher matcher = Pattern.compile(pattern).matcher(req.getPathInfo());
         if (matcher.find()) {
             String userId = matcher.group(1);
@@ -161,7 +161,14 @@ public class TaskListServlet extends HttpServlet2 {
             } catch (SQLException e) {
                 throw new ResponseStatusException(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to fetch task lists");
             }
+        } else {
+            TaskListDTO taskList = getTaskList(req);
+            Jsonb jsonb = JsonbBuilder.create();
+
+            resp.setContentType("application/json");
+            jsonb.toJson(taskList , resp.getWriter());
         }
+
     }
 
     private TaskListDTO getTaskList(HttpServletRequest req) {
