@@ -58,7 +58,7 @@ public class UserServlet extends HttpServlet2 {
             throw new ResponseStatusException(HttpServletResponse.SC_BAD_REQUEST, "Invalid email or email is empty");
         } else if (password == null || password.trim().isEmpty()) {
             throw new ResponseStatusException(HttpServletResponse.SC_BAD_REQUEST, "Invalid password or password is empty");
-        } else if (picture != null && !picture.getContentType().startsWith("image")) {
+        } else if (picture != null && (picture.getSize()==0 || !picture.getContentType().startsWith("image"))) {
             throw new ResponseStatusException(HttpServletResponse.SC_BAD_REQUEST, "Invalid picture");
         }
 
@@ -180,7 +180,7 @@ public class UserServlet extends HttpServlet2 {
             throw new ResponseStatusException(HttpServletResponse.SC_BAD_REQUEST, "Invalid name or name is empty");
         } else if (password == null || password.trim().isEmpty()) {
             throw new ResponseStatusException(HttpServletResponse.SC_BAD_REQUEST, "Invalid password or password is empty");
-        } else if (picture != null && !picture.getContentType().startsWith("image")) {
+        } else if (picture != null && (picture.getSize()==0 || !picture.getContentType().startsWith("image"))) {
             throw new ResponseStatusException(HttpServletResponse.SC_BAD_REQUEST, "Invalid picture");
         }
 
