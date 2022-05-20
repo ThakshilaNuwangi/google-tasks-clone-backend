@@ -1,8 +1,11 @@
 package lk.ijse.dep8.tasks.dto;
 
+import jakarta.json.bind.annotation.JsonbTransient;
+
 public class TaskListDTO {
     private Integer id;
     private String title;
+    @JsonbTransient
     private String userId;
 
     public TaskListDTO() {
