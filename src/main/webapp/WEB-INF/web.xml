@@ -20,6 +20,6 @@
 
     <servlet>
         <servlet-name>TaskServlet</servlet-name>
-        <servlet-class>lk.ijse.dep8.tasks.api.TaskListServlet</servlet-class>
+        <servlet-class>lk.ijse.dep8.tasks.api.TaskServlet</servlet-class>
     </servlet>
 </web-app>
