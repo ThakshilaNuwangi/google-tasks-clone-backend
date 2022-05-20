@@ -114,8 +114,46 @@ public class TaskServlet extends HttpServlet2 {
         }
     }
 
+    @Override
+    protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        TaskDTO task = getTask(req);
+        Connection connection = null;
+        try {
+            connection = pool.get().getConnection();
+            connection.setAutoCommit(false);
+            pushUp(connection, task.getPosition());
+            PreparedStatement stm = connection.prepareStatement("DELETE FROM task WHERE id=?");
+            stm.setInt(1, task.getId());
+            if (stm.executeUpdate()!=1) {
+                throw new SQLException("Failed to delete the task list");
+            }
+            connection.commit();
+            resp.setStatus(HttpServletResponse.SC_NO_CONTENT);
+        } catch (SQLException e) {
+            throw new ResponseStatusException(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage(), e);
+        } finally {
+            try {
+                if (connection!=null) {
+                    if (!connection.getAutoCommit()) {
+                        connection.rollback();
+                        connection.setAutoCommit(true);
+                        connection.close();
+                    }
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
     private void pushDown(Connection connection, int position) throws SQLException {
         PreparedStatement stm = connection.prepareStatement("UPDATE task t SET position = position+1 WHERE t.position>=? ORDER BY t.position");
+        stm.setInt(1, position);
+        stm.executeUpdate();
+    }
+
+    private void pushUp(Connection connection, int position) throws SQLException {
+        PreparedStatement stm = connection.prepareStatement("UPDATE task t SET position = position-1 WHERE t.position>=? ORDER BY t.position");
         stm.setInt(1, position);
         stm.executeUpdate();
     }
@@ -140,12 +178,11 @@ public class TaskServlet extends HttpServlet2 {
             stm.setString(3, userId);
             ResultSet rst = stm.executeQuery();
             if (rst.next()) {
-                int id = rst.getInt("id");
                 String title = rst.getString("title");
                 String details = rst.getString("details");
                 int position = rst.getInt("position");
                 String status = rst.getString("status");
-                return new TaskDTO(id, title,position, details, status);
+                return new TaskDTO(taskId, title,position, details, status);
             } else {
                 throw new ResponseStatusException(404, "Invalid user id or task id");
             }
