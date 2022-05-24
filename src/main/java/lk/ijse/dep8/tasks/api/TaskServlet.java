@@ -185,11 +185,14 @@ public class TaskServlet extends HttpServlet2 {
                 JsonObject json = Json.createObjectBuilder().add("resource", Json.createObjectBuilder().add("items", taskArray)).build();
                 resp.getWriter().println(json);
             } catch (SQLException e) {
-                e.printStackTrace();
+                throw new ResponseStatusException(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage(), e);
             }
 
         } else {
-            System.out.println("Specific task");
+            TaskDTO task = getTask(req);
+            resp.setContentType("application/json");
+            Jsonb jsonb = JsonbBuilder.create();
+            jsonb.toJson(task, resp.getWriter());
         }
 
     }
