@@ -14,12 +14,12 @@ public class TaskDTO implements Serializable {
     private int taskListId;
 
 
-    public TaskDTO(Integer id, String title, Integer position, String notes, String status, int taskListId) {
+    public TaskDTO(Integer id, String title, Integer position, String notes, String status, Integer taskListId) {
         this.id = id;
         this.title = title;
         this.position = position;
         this.notes = notes;
-        this.status = Status.valueOf(status);
+        this.setStatus(status);
         this.taskListId = taskListId;
     }
 

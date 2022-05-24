@@ -4,19 +4,21 @@ import jakarta.json.bind.Jsonb;
 import jakarta.json.bind.JsonbBuilder;
 import jakarta.json.bind.JsonbException;
 import lk.ijse.dep8.tasks.dto.TaskDTO;
-import lk.ijse.dep8.tasks.dto.TaskListDTO;
 import lk.ijse.dep8.tasks.util.HttpServlet2;
 import lk.ijse.dep8.tasks.util.ResponseStatusException;
 
 import javax.annotation.PostConstruct;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
-import javax.servlet.*;
-import javax.servlet.http.*;
-import javax.servlet.annotation.*;
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.sql.DataSource;
 import java.io.IOException;
 import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -30,7 +32,7 @@ public class TaskServlet extends HttpServlet2 {
     private AtomicReference<DataSource> pool;
 
     @PostConstruct
-    public void init(){
+    public void init() {
         try {
             InitialContext ctx = new InitialContext();
             DataSource ds = (DataSource) ctx.lookup("java:comp/env/jdbc/pool");
@@ -56,7 +58,7 @@ public class TaskServlet extends HttpServlet2 {
         String userId = matcher.group(1);
         int taskListId = Integer.parseInt(matcher.group(2));
 
-        Connection connection=null;
+        Connection connection = null;
         try {
             connection = pool.get().getConnection();
 
@@ -70,7 +72,7 @@ public class TaskServlet extends HttpServlet2 {
             Jsonb jsonb = JsonbBuilder.create();
             TaskDTO task = jsonb.fromJson(req.getReader(), TaskDTO.class);
 
-            if (task.getTitle()==null || task.getTitle().trim().isEmpty()) {
+            if (task.getTitle() == null || task.getTitle().trim().isEmpty()) {
                 throw new ResponseStatusException(HttpServletResponse.SC_BAD_REQUEST, "Invalid title or title is empty");
             }
             task.setPosition(0);
@@ -85,7 +87,7 @@ public class TaskServlet extends HttpServlet2 {
             stm.setString(4, task.getStatus().toString());
             stm.setInt(5, taskListId);
 
-            if (stm.executeUpdate()!=1) {
+            if (stm.executeUpdate() != 1) {
                 throw new SQLException("Failed to save the task");
             }
 
@@ -97,7 +99,7 @@ public class TaskServlet extends HttpServlet2 {
 
             resp.setContentType("application/json");
             resp.setStatus(HttpServletResponse.SC_CREATED);
-            jsonb.toJson(task,resp.getWriter());
+            jsonb.toJson(task, resp.getWriter());
 
         } catch (SQLException | JsonbException e) {
             e.printStackTrace();
@@ -124,7 +126,7 @@ public class TaskServlet extends HttpServlet2 {
             pushUp(connection, task.getPosition());
             PreparedStatement stm = connection.prepareStatement("DELETE FROM task WHERE id=?");
             stm.setInt(1, task.getId());
-            if (stm.executeUpdate()!=1) {
+            if (stm.executeUpdate() != 1) {
                 throw new SQLException("Failed to delete the task list");
             }
             connection.commit();
@@ -133,7 +135,7 @@ public class TaskServlet extends HttpServlet2 {
             throw new ResponseStatusException(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage(), e);
         } finally {
             try {
-                if (connection!=null) {
+                if (connection != null) {
                     if (!connection.getAutoCommit()) {
                         connection.rollback();
                         connection.setAutoCommit(true);
@@ -144,6 +146,42 @@ public class TaskServlet extends HttpServlet2 {
                 e.printStackTrace();
             }
         }
+    }
+
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        String pattern = "^/([A-Fa-f0-9\\-]{36})/lists/(\\d+)/tasks/?$";
+        Matcher matcher = Pattern.compile(pattern).matcher(req.getPathInfo());
+        if (matcher.find()) {
+            String userId = matcher.group(1);
+            int taskListId = Integer.parseInt(matcher.group(2));
+
+            try (Connection connection = pool.get().getConnection()) {
+                PreparedStatement stm = connection.prepareStatement("SELECT * FROM task_list t WHERE t.id=? AND t.user_id=?");
+                stm.setInt(1, taskListId);
+                stm.setString(2, userId);
+                if (!stm.executeQuery().next()) {
+                    throw new ResponseStatusException(HttpServletResponse.SC_NOT_FOUND, "invalid task Id");
+                }
+                stm = connection.prepareStatement("SELECT * FROM task WHERE task.task_list_id=? ORDER BY position");
+                stm.setInt(1, taskListId);
+                ResultSet rst = stm.executeQuery();
+                List<TaskDTO> tasks = new ArrayList<>();
+                while (rst.next()) {
+                    tasks.add(new TaskDTO(rst.getInt("id"), rst.getString("title"), rst.getInt("position"),
+                            rst.getString("details"), rst.getString("status"), taskListId));
+                }
+                resp.setContentType("application/json");
+                Jsonb jsonb = JsonbBuilder.create();
+                jsonb.toJson(tasks, resp.getWriter());
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+
+        } else {
+            System.out.println("Specific task");
+        }
+
     }
 
     private void pushDown(Connection connection, int position) throws SQLException {
@@ -182,7 +220,7 @@ public class TaskServlet extends HttpServlet2 {
                 String details = rst.getString("details");
                 int position = rst.getInt("position");
                 String status = rst.getString("status");
-                return new TaskDTO(taskId, title,position, details, status);
+                return new TaskDTO(taskId, title, position, details, status);
             } else {
                 throw new ResponseStatusException(404, "Invalid user id or task id");
             }

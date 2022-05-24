@@ -27,7 +27,7 @@ public class DispatcherServlet extends HttpServlet {
 //            /v1/users/{{user_uuid}}/lists/{{taskList_id}}
 //            /v1/users/{{user_uuid}}/lists/{{taskList_id}}/
                 getServletContext().getNamedDispatcher("TaskListServlet").forward(req, resp);
-            }else if (req.getPathInfo().matches("/[A-Fa-f0-9\\-]{36}/lists/\\d/tasks(/\\d+)?/?")){
+            }else if (req.getPathInfo().matches("/[A-Fa-f0-9\\-]{36}/lists/\\d+/tasks(/\\d+)?/?")) {
                 getServletContext().getNamedDispatcher("TaskServlet").forward(req, resp);
             }
         }
