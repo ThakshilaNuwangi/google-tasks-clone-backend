@@ -1,10 +1,12 @@
 package lk.ijse.dep8.tasks.api;
 
+import jakarta.json.Json;
+import jakarta.json.JsonObject;
 import jakarta.json.bind.Jsonb;
 import jakarta.json.bind.JsonbBuilder;
 import jakarta.json.bind.JsonbException;
+import jakarta.json.stream.JsonParser;
 import lk.ijse.dep8.tasks.dto.TaskListDTO;
-import lk.ijse.dep8.tasks.dto.TaskListsDTO;
 import lk.ijse.dep8.tasks.util.HttpServlet2;
 import lk.ijse.dep8.tasks.util.ResponseStatusException;
 
@@ -16,6 +18,7 @@ import javax.servlet.http.*;
 import javax.servlet.annotation.*;
 import javax.sql.DataSource;
 import java.io.IOException;
+import java.io.StringReader;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicReference;
@@ -57,20 +60,15 @@ public class TaskListServlet extends HttpServlet2 {
         String userId = matcher.group(1);
 
         try (Connection connection = pool.get().getConnection()) {
-            PreparedStatement stm = connection.prepareStatement("SELECT * FROM user WHERE id=?");
-            stm.setString(1, userId);
-            ResultSet rst = stm.executeQuery();
-            if (!rst.next()) {
-                throw new ResponseStatusException(HttpServletResponse.SC_NOT_FOUND, "Invalid user ID");
-            }
+
             Jsonb jsonb = JsonbBuilder.create();
             TaskListDTO taskListDTO = jsonb.fromJson(req.getReader(), TaskListDTO.class);
 
-            if (taskListDTO.getTitle().trim().isEmpty()) {
+            if (taskListDTO.getTitle()==null || taskListDTO.getTitle().trim().isEmpty()) {
                 throw new ResponseStatusException(HttpServletResponse.SC_BAD_REQUEST, "Invalid title or title is empty");
             }
 
-            stm = connection.prepareStatement("INSERT INTO task_list (name, user_id) VALUES (?,?)", Statement.RETURN_GENERATED_KEYS);
+            PreparedStatement stm = connection.prepareStatement("INSERT INTO task_list (name, user_id) VALUES (?,?)", Statement.RETURN_GENERATED_KEYS);
             stm.setString(1, taskListDTO.getTitle());
             stm.setString(2, userId);
 
@@ -78,7 +76,7 @@ public class TaskListServlet extends HttpServlet2 {
                 throw new SQLException("Failed to save the task list");
             }
 
-            rst = stm.getGeneratedKeys();
+            ResultSet rst = stm.getGeneratedKeys();
             rst.next();
             taskListDTO.setId(rst.getInt(1));
 
@@ -157,7 +155,11 @@ public class TaskListServlet extends HttpServlet2 {
 
                 resp.setContentType("application/json");
                 Jsonb jsonb = JsonbBuilder.create();
-                jsonb.toJson(new TaskListsDTO(taskList), resp.getWriter());
+                JsonParser parser = Json.createParser(new StringReader(jsonb.toJson(taskList)));
+                parser.next();
+
+                JsonObject json = Json.createObjectBuilder().add("items", parser.getArray()).build();
+                resp.getWriter().println(json);
             } catch (SQLException e) {
                 throw new ResponseStatusException(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to fetch task lists");
             }
