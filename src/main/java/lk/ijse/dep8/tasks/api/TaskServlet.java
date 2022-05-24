@@ -82,7 +82,7 @@ public class TaskServlet extends HttpServlet2 {
             task.setStatus(TaskDTO.Status.NEEDS_ACTION.toString());
             connection.setAutoCommit(false);
 
-            pushDown(connection, 0);
+            pushDown(connection, 0, taskListId);
             stm = connection.prepareStatement("INSERT INTO task (title, details, position, status,task_list_id) VALUES (?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
             stm.setString(1, task.getTitle());
             stm.setString(2, task.getNotes());
@@ -126,7 +126,7 @@ public class TaskServlet extends HttpServlet2 {
         try {
             connection = pool.get().getConnection();
             connection.setAutoCommit(false);
-            pushUp(connection, task.getPosition());
+            pushUp(connection, task.getPosition(), task.getTaskListId());
             PreparedStatement stm = connection.prepareStatement("DELETE FROM task WHERE id=?");
             stm.setInt(1, task.getId());
             if (stm.executeUpdate() != 1) {
@@ -216,8 +216,8 @@ public class TaskServlet extends HttpServlet2 {
             connection = pool.get().getConnection();
             connection.setAutoCommit(false);
             if (!oldTask.getPosition().equals(newTask.getPosition())) {
-                pushUp(connection, oldTask.getPosition());
-                pushDown(connection, newTask.getPosition());
+                pushUp(connection, oldTask.getPosition(), oldTask.getTaskListId());
+                pushDown(connection, newTask.getPosition(), newTask.getTaskListId());
             }
             PreparedStatement stm = connection.prepareStatement("UPDATE task SET title=?, details=?, position=?, status=? WHERE id=?");
             stm.setString(1, newTask.getTitle());
@@ -249,15 +249,17 @@ public class TaskServlet extends HttpServlet2 {
         }
     }
 
-    private void pushDown(Connection connection, int position) throws SQLException {
-        PreparedStatement stm = connection.prepareStatement("UPDATE task t SET position = position+1 WHERE t.position>=? ORDER BY t.position");
+    private void pushDown(Connection connection, int position, int taskListId) throws SQLException {
+        PreparedStatement stm = connection.prepareStatement("UPDATE task t SET position = position+1 WHERE t.position>=? AND t.task_list_id=? ORDER BY t.position");
         stm.setInt(1, position);
+        stm.setInt(2, taskListId);
         stm.executeUpdate();
     }
 
-    private void pushUp(Connection connection, int position) throws SQLException {
-        PreparedStatement stm = connection.prepareStatement("UPDATE task t SET position = position-1 WHERE t.position>=? ORDER BY t.position");
+    private void pushUp(Connection connection, int position, int taskListId) throws SQLException {
+        PreparedStatement stm = connection.prepareStatement("UPDATE task t SET position = position-1 WHERE t.position>=? AND t.task_list_id=? ORDER BY t.position");
         stm.setInt(1, position);
+        stm.setInt(2, taskListId);
         stm.executeUpdate();
     }
 
@@ -275,7 +277,7 @@ public class TaskServlet extends HttpServlet2 {
 
         try (Connection connection = pool.get().getConnection()) {
             PreparedStatement stm = connection.
-                    prepareStatement("SELECT * FROM task_list tl INNER JOIN task t WHERE t.id=? AND tl.id=? AND tl.user_id=?");
+                    prepareStatement("SELECT * FROM task_list tl INNER JOIN task t ON t.task_list_id = tl.id WHERE t.id=? AND tl.id=? AND tl.user_id=?");
             stm.setInt(1, taskId);
             stm.setInt(2, taskListId);
             stm.setString(3, userId);
