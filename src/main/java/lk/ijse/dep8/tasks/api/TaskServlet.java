@@ -197,6 +197,58 @@ public class TaskServlet extends HttpServlet2 {
 
     }
 
+    @Override
+    protected void doPatch(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        if (req.getContentType() == null || !req.getContentType().startsWith("application/json")) {
+            throw new ResponseStatusException(HttpServletResponse.SC_UNSUPPORTED_MEDIA_TYPE, "Invalid content type or content type is empty");
+        }
+
+        TaskDTO oldTask = getTask(req);
+        Connection connection = null;
+        try{
+            Jsonb jsonb = JsonbBuilder.create();
+            TaskDTO newTask = jsonb.fromJson(req.getReader(), TaskDTO.class);
+            if (newTask.getTitle() == null || newTask.getTitle().trim().isEmpty()) {
+                throw new ResponseStatusException(HttpServletResponse.SC_BAD_REQUEST, "Invalid title or title is empty");
+            } else if (newTask.getPosition()==null || newTask.getPosition()<0) {
+                throw new ResponseStatusException(HttpServletResponse.SC_BAD_REQUEST, "Invalid position or position is empty");
+            }
+            connection = pool.get().getConnection();
+            connection.setAutoCommit(false);
+            if (!oldTask.getPosition().equals(newTask.getPosition())) {
+                pushUp(connection, oldTask.getPosition());
+                pushDown(connection, newTask.getPosition());
+            }
+            PreparedStatement stm = connection.prepareStatement("UPDATE task SET title=?, details=?, position=?, status=? WHERE id=?");
+            stm.setString(1, newTask.getTitle());
+            stm.setString(2, newTask.getNotes());
+            stm.setInt(3, newTask.getPosition());
+            stm.setString(4, newTask.getStatus());
+            stm.setInt(5, oldTask.getId());
+            if (stm.executeUpdate()!=1) {
+                throw new SQLException("Failed to update the task");
+            }
+            connection.commit();
+            resp.setStatus(HttpServletResponse.SC_NO_CONTENT);
+        } catch(JsonbException e) {
+            throw new ResponseStatusException(HttpServletResponse.SC_BAD_REQUEST, "Invalid JSON");
+        } catch (SQLException e) {
+            throw new ResponseStatusException(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage(), e);
+        } finally {
+            if (connection!=null) {
+                try {
+                    if (!connection.getAutoCommit()) {
+                        connection.rollback();
+                        connection.setAutoCommit(true);
+                    }
+                    connection.close();
+                } catch (SQLException e) {
+                    logger.log(Level.SEVERE, e.getMessage(), e);
+                }
+            }
+        }
+    }
+
     private void pushDown(Connection connection, int position) throws SQLException {
         PreparedStatement stm = connection.prepareStatement("UPDATE task t SET position = position+1 WHERE t.position>=? ORDER BY t.position");
         stm.setInt(1, position);
