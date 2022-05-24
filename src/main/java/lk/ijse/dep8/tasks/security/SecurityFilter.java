@@ -1,5 +1,6 @@
 package lk.ijse.dep8.tasks.security;
 
+import lk.ijse.dep8.tasks.dto.UserDTO;
 import org.apache.commons.codec.digest.DigestUtils;
 
 import javax.annotation.Resource;
@@ -62,6 +63,13 @@ public class SecurityFilter extends HttpFilter {
                 res.setStatus(401);
                 return;
             }
+
+            SecurityContextHolder.setPrinciple(new UserDTO(rst.getString("id"),
+                    rst.getString("full_name"), rst.getString("email"),
+                    rst.getString("password"), rst.getString("profile_pic")));
+
+            chain.doFilter(req, res);
+
         } catch (SQLException e) {
             e.printStackTrace();
         }
