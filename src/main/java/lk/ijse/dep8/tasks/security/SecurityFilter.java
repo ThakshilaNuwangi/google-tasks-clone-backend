@@ -64,7 +64,7 @@ public class SecurityFilter extends HttpFilter {
                 return;
             }
 
-            SecurityContextHolder.setPrinciple(new UserDTO(rst.getString("id"),
+            SecurityContextHolder.setPrincipal(new UserDTO(rst.getString("id"),
                     rst.getString("full_name"), rst.getString("email"),
                     rst.getString("password"), rst.getString("profile_pic")));
 
