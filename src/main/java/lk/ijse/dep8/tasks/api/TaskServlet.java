@@ -3,6 +3,8 @@ package lk.ijse.dep8.tasks.api;
 import jakarta.json.bind.Jsonb;
 import jakarta.json.bind.JsonbBuilder;
 import jakarta.json.bind.JsonbException;
+import lk.ijse.dep8.tasks.dto.ItemsDTO;
+import lk.ijse.dep8.tasks.dto.ResourceDTO;
 import lk.ijse.dep8.tasks.dto.TaskDTO;
 import lk.ijse.dep8.tasks.util.HttpServlet2;
 import lk.ijse.dep8.tasks.util.ResponseStatusException;
@@ -173,7 +175,7 @@ public class TaskServlet extends HttpServlet2 {
                 }
                 resp.setContentType("application/json");
                 Jsonb jsonb = JsonbBuilder.create();
-                jsonb.toJson(tasks, resp.getWriter());
+                jsonb.toJson(new ResourceDTO(new ItemsDTO(tasks)), resp.getWriter());
             } catch (SQLException e) {
                 e.printStackTrace();
             }
