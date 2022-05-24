@@ -1,10 +1,12 @@
 package lk.ijse.dep8.tasks.api;
 
+import jakarta.json.Json;
+import jakarta.json.JsonObject;
 import jakarta.json.bind.Jsonb;
 import jakarta.json.bind.JsonbBuilder;
 import jakarta.json.bind.JsonbException;
+import jakarta.json.stream.JsonParser;
 import lk.ijse.dep8.tasks.dto.TaskListDTO;
-import lk.ijse.dep8.tasks.dto.TaskListsDTO;
 import lk.ijse.dep8.tasks.util.HttpServlet2;
 import lk.ijse.dep8.tasks.util.ResponseStatusException;
 
@@ -16,6 +18,7 @@ import javax.servlet.http.*;
 import javax.servlet.annotation.*;
 import javax.sql.DataSource;
 import java.io.IOException;
+import java.io.StringReader;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicReference;
@@ -152,7 +155,11 @@ public class TaskListServlet extends HttpServlet2 {
 
                 resp.setContentType("application/json");
                 Jsonb jsonb = JsonbBuilder.create();
-                jsonb.toJson(new TaskListsDTO(taskList), resp.getWriter());
+                JsonParser parser = Json.createParser(new StringReader(jsonb.toJson(taskList)));
+                parser.next();
+
+                JsonObject json = Json.createObjectBuilder().add("items", parser.getArray()).build();
+                resp.getWriter().println(json);
             } catch (SQLException e) {
                 throw new ResponseStatusException(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to fetch task lists");
             }
