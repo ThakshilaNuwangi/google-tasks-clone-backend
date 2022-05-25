@@ -1,6 +1,9 @@
 package lk.ijse.dep8.tasks.security;
 
+import jakarta.json.bind.Jsonb;
+import jakarta.json.bind.JsonbBuilder;
 import lk.ijse.dep8.tasks.dto.UserDTO;
+import lk.ijse.dep8.tasks.util.HttpResponseErrorMsg;
 import org.apache.commons.codec.digest.DigestUtils;
 
 import javax.annotation.Resource;
@@ -17,6 +20,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Base64;
+import java.util.Date;
 
 @WebFilter(filterName = "SecurityFilter", urlPatterns = "/*")
 public class SecurityFilter extends HttpFilter {
@@ -37,7 +41,7 @@ public class SecurityFilter extends HttpFilter {
         String authorization = req.getHeader("Authorization");
 
         if (authorization==null || !authorization.startsWith("Basic")) {
-            res.setStatus(401);
+            sendErrorResponse(req, res);
             return;
         }
 
@@ -55,12 +59,12 @@ public class SecurityFilter extends HttpFilter {
             ResultSet rst = stm.executeQuery();
 
             if (!rst.next()) {
-                res.setStatus(401);
+                sendErrorResponse(req, res);
                 return;
             }
 
             if (!DigestUtils.sha256Hex(password).equals(rst.getString("password"))) {
-                res.setStatus(401);
+                sendErrorResponse(req, res);
                 return;
             }
 
@@ -73,5 +77,12 @@ public class SecurityFilter extends HttpFilter {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+    }
+
+    private void sendErrorResponse(HttpServletRequest req, HttpServletResponse res) throws IOException {
+        res.setContentType("application/json");
+        res.setStatus(401);
+        Jsonb jsonb = JsonbBuilder.create();
+        jsonb.toJson(new HttpResponseErrorMsg(new Date().getTime(), 401, null, "permission denied", req.getRequestURI()), res.getWriter());
     }
 }
