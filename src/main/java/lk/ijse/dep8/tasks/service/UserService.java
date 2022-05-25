@@ -18,16 +18,16 @@ public class UserService {
         return UserDAO.existsUser(connection, email);
     }
 
-    public static UserDTO registerUser(Connection connection, Part picture, String pictureUrl, String appLocation, UserDTO user) throws SQLException {
+    public static UserDTO registerUser(Connection connection, Part picture, String appLocation, UserDTO user) throws SQLException {
         try {
             connection.setAutoCommit(false);
             user.setId(UUID.randomUUID().toString());
             user.setPassword(DigestUtils.sha256Hex(user.getPassword()));
 
             if (picture != null) {
-                pictureUrl += "/uploads/" + user.getId();
+                user.setPicture(user.getPicture() + user.getId());
             }
-            user.setPicture(pictureUrl);
+
             UserDTO savedUser = UserDAO.saveUser(connection, user);
 
             if (picture != null) {
@@ -45,8 +45,9 @@ public class UserService {
 
         } catch (Throwable e) {
             connection.rollback();
-            connection.setAutoCommit(true);
             throw new RuntimeException(e);
+        } finally {
+            connection.setAutoCommit(true);
         }
     }
 

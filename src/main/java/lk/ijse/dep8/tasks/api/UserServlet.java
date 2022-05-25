@@ -70,10 +70,17 @@ public class UserServlet extends HttpServlet2 {
                 throw new ResponseStatusException(HttpServletResponse.SC_CONFLICT, "User has been already registered");
             }
 
-            UserDTO user = new UserDTO(null, name, email, password, null);
-            String pictureUrl = req.getScheme()+"://"+req.getServerName()+":"+req.getServerPort()+req.getContextPath();
-            user = UserService.registerUser(connection, picture, pictureUrl, getServletContext().getRealPath("/"), user);
+            String pictureUrl = null;
+            if (picture != null){
+                pictureUrl = req.getScheme() + "://" + req.getServerName() + ":"
+                        + req.getServerPort() + req.getContextPath()+ "/uploads/";;
+            }
+            UserDTO user = new UserDTO(null, name, email, password, pictureUrl);
 
+            user = UserService.registerUser(connection, picture,
+                    getServletContext().getRealPath("/"), user);
+
+            resp.setStatus(HttpServletResponse.SC_CREATED);
             resp.setContentType("application/json");
 
             Jsonb jsonb = JsonbBuilder.create();
