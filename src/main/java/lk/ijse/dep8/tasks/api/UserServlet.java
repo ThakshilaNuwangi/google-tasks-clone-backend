@@ -66,65 +66,21 @@ public class UserServlet extends HttpServlet2 {
         try {
             connection = pool.getConnection();
 
-            if (UserService.existUser(connection, email)) {
+            if (UserService.existsUser(connection, email)) {
                 throw new ResponseStatusException(HttpServletResponse.SC_CONFLICT, "User has been already registered");
             }
 
-            connection.setAutoCommit(false);
-
-            PreparedStatement stm = connection.prepareStatement("INSERT INTO user(id, email, password, full_name, profile_pic) VALUES (?,?,?,?,?)");
-            String id = UUID.randomUUID().toString();
-            stm.setString(1, id);
-            stm.setString(2, email);
-            stm.setString(3, DigestUtils.sha256Hex(password));
-            stm.setString(4, name);
-
-            String pictureUrl = null;
-            if (picture !=null) {
-                pictureUrl = req.getScheme() + "://" + req.getServerName() + ":" + req.getServerPort() + req.getContextPath();
-                pictureUrl += "/uploads/" + id;
-            }
-
-            stm.setString(5, pictureUrl);
-
-            if (stm.executeUpdate() != 1) {
-                throw new SQLException("Failed to register the user");
-            }
-
-            if (picture!=null) {
-                String appLocation = getServletContext().getRealPath("/");
-                Path path = Paths.get(appLocation, "uploads");
-                if (Files.notExists(path)) {
-                    Files.createDirectory(path);
-                }
-
-                String picturePath = path.resolve(id).toAbsolutePath().toString();
-                picture.write(picturePath);
-
-                if (Files.notExists(Paths.get(picturePath))) {
-                    throw new ResponseStatusException(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to save the picture");
-                }
-            }
-
-            connection.commit();
+            UserDTO user = new UserDTO(null, name, email, password, null);
+            String pictureUrl = req.getScheme()+"://"+req.getServerName()+":"+req.getServerPort()+req.getContextPath();
+            user = UserService.registerUser(connection, picture, pictureUrl, getServletContext().getRealPath("/"), user);
 
             resp.setContentType("application/json");
-            UserDTO userDTO = new UserDTO(id, name, email, password, pictureUrl);
+
             Jsonb jsonb = JsonbBuilder.create();
-            jsonb.toJson(userDTO, resp.getWriter());
+            jsonb.toJson(user, resp.getWriter());
 
         } catch (SQLException e) {
             throw new ResponseStatusException(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to register the user");
-        } finally {
-            try {
-                if (!connection.getAutoCommit()){
-                    connection.rollback();
-                    connection.setAutoCommit(true);
-                }
-                connection.close();
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
         }
     }
 
