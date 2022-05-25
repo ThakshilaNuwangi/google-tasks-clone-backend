@@ -21,12 +21,15 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Base64;
 import java.util.Date;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 @WebFilter(filterName = "SecurityFilter", urlPatterns = "/*")
 public class SecurityFilter extends HttpFilter {
 
     @Resource(name = "java:comp/env/jdbc/pool")
     private volatile DataSource pool;
+    private final Logger logger= Logger.getLogger(SecurityFilter.class.getName());
 
     @Override
     protected void doFilter(HttpServletRequest req, HttpServletResponse res, FilterChain chain) throws IOException, ServletException {
@@ -75,7 +78,7 @@ public class SecurityFilter extends HttpFilter {
             chain.doFilter(req, res);
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, e.getMessage(), e);
         }
     }
 
