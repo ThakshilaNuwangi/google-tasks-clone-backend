@@ -35,8 +35,12 @@ public class UserDAO {
     public static void updateUser(UserDTO user) {
 
     }
-    public static void deleteUser(String userId) {
-
+    public static void deleteUser(Connection connection, String userId) throws SQLException {
+        PreparedStatement stm = connection.prepareStatement("DELETE FROM user WHERE id=?");
+        stm.setString(1, userId);
+        if (stm.executeUpdate()!=1) {
+            throw new SQLException("Failed to delete the user");
+        }
     }
     public static UserDTO getUser(Connection connection, String emailOrId) throws SQLException {
         PreparedStatement stm = connection.

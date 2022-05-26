@@ -7,6 +7,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.opentest4j.AssertionFailedError;
 
 import java.sql.Connection;
 import java.sql.Driver;
@@ -66,5 +67,15 @@ class UserDAOTest {
         UserDTO user = UserDAO.getUser(connection, arg);
         // Then
         assertNotNull(user);
+    }
+
+    @Test
+    void deleteUser() throws SQLException {
+        // Given
+        String userId = "4c3a0204-673b-4b37-9453-22b8c011797f";
+        // When
+        UserDAO.deleteUser(connection, userId);
+        // Then
+        assertThrows(AssertionFailedError.class, ()-> existsUser(userId));
     }
 }
