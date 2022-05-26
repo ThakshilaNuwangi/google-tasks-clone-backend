@@ -66,7 +66,7 @@ public class UserServlet extends HttpServlet2 {
         try {
             connection = pool.getConnection();
 
-            if (UserService.existsUser(connection, email)) {
+            if (new UserService().existsUser(connection, email)) {
                 throw new ResponseStatusException(HttpServletResponse.SC_CONFLICT, "User has been already registered");
             }
 
@@ -77,7 +77,7 @@ public class UserServlet extends HttpServlet2 {
             }
             UserDTO user = new UserDTO(null, name, email, password, pictureUrl);
 
-            user = UserService.registerUser(connection, picture,
+            user = new UserService().registerUser(connection, picture,
                     getServletContext().getRealPath("/"), user);
 
             resp.setStatus(HttpServletResponse.SC_CREATED);
@@ -86,8 +86,8 @@ public class UserServlet extends HttpServlet2 {
             Jsonb jsonb = JsonbBuilder.create();
             jsonb.toJson(user, resp.getWriter());
 
-        } catch (SQLException e) {
-            throw new ResponseStatusException(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to register the user");
+        } catch (Throwable e) {
+            throw new ResponseStatusException(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to register the user", e);
         }
     }
 
@@ -205,29 +205,20 @@ public class UserServlet extends HttpServlet2 {
 
     private UserDTO getUser(HttpServletRequest req) {
         if (!(req.getPathInfo() != null && (req.getPathInfo().replaceAll("/","").length()==36))){
-            throw new ResponseStatusException(404, "Not found");
+            throw new ResponseStatusException(404, "Invalid User ID");
         }
 
         String userId = req.getPathInfo().replaceAll("/","");
 
         try (Connection connection = pool.getConnection()) {
-            PreparedStatement stm = connection.prepareStatement("SELECT * FROM user WHERE id=?");
-            stm.setString(1, userId);
-            ResultSet rst = stm.executeQuery();
-            if (!rst.next()) {
+            if (!new UserService().existsUser(connection, userId)) {
                 throw new ResponseStatusException(HttpServletResponse.SC_NOT_FOUND, "Invalid user Id");
             } else {
-                String name = rst.getString("full_name");
-                String email = rst.getString("email");
-                String password = rst.getString("password");
-                String picture = rst.getString("profile_pic");
-
-                UserDTO userDTO = new UserDTO(userId, name, email, password, picture);
-                return userDTO;
+                return new UserService().getUser(connection, userId);
             }
 
-        } catch (SQLException e) {
-            throw new ResponseStatusException(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to fetch the user info");
+        } catch (Throwable e) {
+            throw new ResponseStatusException(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to fetch the user info", e);
         }
     }
 }

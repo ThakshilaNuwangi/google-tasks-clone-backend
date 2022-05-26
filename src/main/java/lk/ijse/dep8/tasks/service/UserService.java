@@ -14,20 +14,19 @@ import java.util.UUID;
 
 public class UserService {
 
-    public static boolean existsUser(Connection connection, String email) throws SQLException {
-        return UserDAO.existsUser(connection, email);
+    public boolean existsUser(Connection connection, String userIdOrEmail) throws SQLException {
+        return UserDAO.existsUser(connection, userIdOrEmail);
     }
 
-    public static UserDTO registerUser(Connection connection, Part picture, String appLocation, UserDTO user) throws SQLException {
+    public UserDTO registerUser(Connection connection, Part picture, String appLocation, UserDTO user) throws SQLException {
         try {
             connection.setAutoCommit(false);
             user.setId(UUID.randomUUID().toString());
-            user.setPassword(DigestUtils.sha256Hex(user.getPassword()));
 
             if (picture != null) {
                 user.setPicture(user.getPicture() + user.getId());
             }
-
+            user.setPassword(DigestUtils.sha256Hex(user.getPassword()));
             UserDTO savedUser = UserDAO.saveUser(connection, user);
 
             if (picture != null) {
@@ -51,15 +50,15 @@ public class UserService {
         }
     }
 
-    public static void updateUser(UserDTO user) {
+    public void updateUser(UserDTO user) {
 
     }
 
-    public static void deleteUser(String userId) {
+    public void deleteUser(String userId) {
 
     }
 
-    public static UserDTO getUser(String userId) {
-        return null;
+    public UserDTO getUser(Connection connection, String userIdOrEmail) throws SQLException {
+        return UserDAO.getUser(connection, userIdOrEmail);
     }
 }

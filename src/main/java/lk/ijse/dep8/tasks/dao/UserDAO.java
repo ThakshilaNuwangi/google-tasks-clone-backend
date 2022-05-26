@@ -5,14 +5,16 @@ import org.apache.commons.codec.digest.DigestUtils;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.UUID;
 
 public class UserDAO {
 
-    public static boolean existsUser(Connection connection, String email) throws SQLException {
-        PreparedStatement stm = connection.prepareStatement("SELECT id FROM user WHERE email=?");
-        stm.setString(1, email);
+    public static boolean existsUser(Connection connection, String emailOrId) throws SQLException {
+        PreparedStatement stm = connection.prepareStatement("SELECT id FROM user WHERE email=? OR id=?");
+        stm.setString(1, emailOrId);
+        stm.setString(2, emailOrId);
         return (stm.executeQuery().next());
     }
 
@@ -36,7 +38,20 @@ public class UserDAO {
     public static void deleteUser(String userId) {
 
     }
-    public static UserDTO getUser(String userId) {
-        return null;
+    public static UserDTO getUser(Connection connection, String emailOrId) throws SQLException {
+        PreparedStatement stm = connection.
+                prepareStatement("SELECT * FROM user WHERE email = ? OR id = ?");
+        stm.setString(1, emailOrId);
+        stm.setString(2, emailOrId);
+        ResultSet rst = stm.executeQuery();
+        if (rst.next()) {
+            return new UserDTO(rst.getString("id"),
+                    rst.getString("full_name"),
+                    rst.getString("email"),
+                    rst.getString("password"),
+                    rst.getString("profile_pic"));
+        } else {
+            return null;
+        }
     }
 }
