@@ -66,6 +66,17 @@ public class UserDTO implements Serializable {
     }
 
     @Override
+    public boolean equals(Object obj) {
+        UserDTO compareWith = (UserDTO) obj;
+
+        return this.getId().equals(compareWith.getId()) &&
+                this.getName().equals(compareWith.getName()) &&
+                this.getEmail().equals(compareWith.getEmail()) &&
+                this.getPassword().equals(compareWith.getPassword()) &&
+                this.getPicture().equals(compareWith.getPicture());
+    }
+
+    @Override
     public String toString() {
         return "UserDTO{" +
                 "id='" + id + '\'' +
