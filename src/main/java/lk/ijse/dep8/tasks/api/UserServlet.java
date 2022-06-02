@@ -133,7 +133,7 @@ public class UserServlet extends HttpServlet2 {
                         + req.getServerPort() + req.getContextPath();
                 pictureUrl += "/uploads/" + user.getId();
             }
-            UserService.updateUser(connection, new UserDTO(user.getId(), name, user.getEmail(), password, pictureUrl), picture, getServletContext().getRealPath("/"));
+            new UserService().updateUser(connection, new UserDTO(user.getId(), name, user.getEmail(), password, pictureUrl), picture, getServletContext().getRealPath("/"));
 
             resp.setStatus(204);
         } catch (ResponseStatusException e) {

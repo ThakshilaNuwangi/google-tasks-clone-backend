@@ -46,7 +46,7 @@ class UserDAOTest {
     @ParameterizedTest
     @ValueSource(strings = {"thakshila123@gmail.com", "20b23df5-9c80-4b04-93a0-a9a22ac1ce7f", "hgbuy@gmail.com"})
     void existsUser(String arg) throws SQLException {
-        boolean result = UserDAO.existsUser(connection, arg);
+        boolean result = new UserDAO().existsUser(connection, arg);
         assertTrue(result);
     }
 
@@ -54,8 +54,8 @@ class UserDAOTest {
     void saveUser() throws SQLException {
         String id = UUID.randomUUID().toString();
         UserDTO givenUser = new UserDTO(id, "Kasun", "kasdfgvbhnjun@gmail.com", "abc", null);
-        UserDTO savedUser = UserDAO.saveUser(connection, givenUser);
-        boolean result = UserDAO.existsUser(connection, savedUser.getEmail());
+        UserDTO savedUser = new UserDAO().saveUser(connection, givenUser);
+        boolean result = new UserDAO().existsUser(connection, savedUser.getEmail());
         assertTrue(result);
         assertEquals(givenUser, savedUser);
     }
@@ -64,7 +64,7 @@ class UserDAOTest {
     @ValueSource(strings = {"thakshila123@gmail.com", "20b23df5-9c80-4b04-93a0-a9a22ac1ce7f", "hgbuy@gmail.com"})
     void getUser(String arg) throws SQLException {
         // When
-        UserDTO user = UserDAO.getUser(connection, arg);
+        UserDTO user = new UserDAO().getUser(connection, arg);
         // Then
         assertNotNull(user);
     }
@@ -74,7 +74,7 @@ class UserDAOTest {
         // Given
         String userId = "4c3a0204-673b-4b37-9453-22b8c011797f";
         // When
-        UserDAO.deleteUser(connection, userId);
+        new UserDAO().deleteUser(connection, userId);
         // Then
         assertThrows(AssertionFailedError.class, ()-> existsUser(userId));
     }
