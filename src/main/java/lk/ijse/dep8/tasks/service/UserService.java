@@ -1,6 +1,6 @@
 package lk.ijse.dep8.tasks.service;
 
-import lk.ijse.dep8.tasks.dao.UserDAO;
+import lk.ijse.dep8.tasks.dao.OldUserDAO;
 import lk.ijse.dep8.tasks.dto.UserDTO;
 import org.apache.commons.codec.digest.DigestUtils;
 
@@ -19,7 +19,7 @@ public class UserService {
     private final Logger logger = Logger.getLogger(UserService.class.getName());
 
     public boolean existsUser(Connection connection, String userIdOrEmail) throws SQLException {
-        return new UserDAO().existsUser(connection, userIdOrEmail);
+        return new OldUserDAO().existsUser(connection, userIdOrEmail);
     }
 
     public UserDTO registerUser(Connection connection, Part picture, String appLocation, UserDTO user) throws SQLException {
@@ -31,7 +31,7 @@ public class UserService {
                 user.setPicture(user.getPicture() + user.getId());
             }
             user.setPassword(DigestUtils.sha256Hex(user.getPassword()));
-            UserDTO savedUser = new UserDAO().saveUser(connection, user);
+            UserDTO savedUser = new OldUserDAO().saveUser(connection, user);
 
             if (picture != null) {
                 Path path = Paths.get(appLocation, "uploads");
@@ -59,7 +59,7 @@ public class UserService {
             connection.setAutoCommit(false);
 
             user.setPassword(DigestUtils.sha256Hex(user.getPassword()));
-            new UserDAO().updateUser(connection, user);
+            new OldUserDAO().updateUser(connection, user);
 
             Path path = Paths.get(appLocation, "uploads");
             Path picturePath = path.resolve(user.getId());
@@ -85,7 +85,7 @@ public class UserService {
     }
 
     public void deleteUser(Connection connection, String userId, String appLocation) throws SQLException {
-        new UserDAO().deleteUser(connection, userId);
+        new OldUserDAO().deleteUser(connection, userId);
 
         new Thread(()->{
             Path imagePath = Paths.get(appLocation, "uploads", userId);
@@ -98,6 +98,6 @@ public class UserService {
     }
 
     public UserDTO getUser(Connection connection, String userIdOrEmail) throws SQLException {
-        return new UserDAO().getUser(connection, userIdOrEmail);
+        return new OldUserDAO().getUser(connection, userIdOrEmail);
     }
 }
