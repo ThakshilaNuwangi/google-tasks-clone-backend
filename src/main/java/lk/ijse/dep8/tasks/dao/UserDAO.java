@@ -20,7 +20,6 @@ public class UserDAO {
 
     public UserDTO saveUser(Connection connection, UserDTO user) throws SQLException {
         PreparedStatement stm = connection.prepareStatement("INSERT INTO user(id, email, password, full_name, profile_pic) VALUES (?,?,?,?,?)");
-        String id = UUID.randomUUID().toString();
         stm.setString(1, user.getId());
         stm.setString(2, user.getEmail());
         stm.setString(3, user.getPassword());
