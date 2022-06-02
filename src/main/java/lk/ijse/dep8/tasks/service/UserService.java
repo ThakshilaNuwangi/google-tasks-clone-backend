@@ -54,8 +54,34 @@ public class UserService {
         }
     }
 
-    public void updateUser(UserDTO user) {
+    public static void updateUser(Connection connection, UserDTO user, Part picture, String appLocation) throws SQLException {
+        try {
+            connection.setAutoCommit(false);
 
+            user.setPassword(DigestUtils.sha256Hex(user.getPassword()));
+            UserDAO.updateUser(connection, user);
+
+            Path path = Paths.get(appLocation, "uploads");
+            Path picturePath = path.resolve(user.getId());
+
+            if (picture != null) {
+                if (Files.notExists(path)) {
+                    Files.createDirectory(path);
+                }
+
+                Files.deleteIfExists(picturePath);
+                picture.write(picturePath.toAbsolutePath().toString());
+            } else {
+                Files.deleteIfExists(picturePath);
+            }
+
+            connection.commit();
+        } catch (Throwable e){
+            connection.rollback();
+            throw new RuntimeException(e);
+        } finally {
+            connection.setAutoCommit(true);
+        }
     }
 
     public void deleteUser(Connection connection, String userId, String appLocation) throws SQLException {

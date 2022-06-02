@@ -119,7 +119,7 @@ public class UserServlet extends HttpServlet2 {
             return;
         }
 
-        UserDTO userDTO = getUser(req);
+        UserDTO user = getUser(req);
 
         String name = req.getParameter("name");
         String password = req.getParameter("password");
@@ -133,63 +133,22 @@ public class UserServlet extends HttpServlet2 {
             throw new ResponseStatusException(HttpServletResponse.SC_BAD_REQUEST, "Invalid picture");
         }
 
-        Connection connection=null;
-        try {
-            connection = pool.getConnection();
-            connection.setAutoCommit(false);
-
-            PreparedStatement stm = connection.prepareStatement("UPDATE user SET full_name=?, password=?, profile_pic=? WHERE id=?");
-            stm.setString(1, name);
-            stm.setString(2, DigestUtils.sha256Hex(password));
+        try (Connection connection = pool.getConnection()) {
 
             String pictureUrl = null;
             if (picture != null) {
                 pictureUrl = req.getScheme() + "://" + req.getServerName() + ":"
                         + req.getServerPort() + req.getContextPath();
-                pictureUrl += "/uploads/" + userDTO.getId();
+                pictureUrl += "/uploads/" + user.getId();
             }
-            stm.setString(3, pictureUrl);
-            stm.setString(4, userDTO.getId());
+            UserService.updateUser(connection, new UserDTO(user.getId(), name, user.getEmail(), password, pictureUrl), picture, getServletContext().getRealPath("/"));
 
-            if (stm.executeUpdate()!=1) {
-                throw new SQLException("Failed to update the user");
-            }
-
-            String appLocation = getServletContext().getRealPath("/");
-            Path path = Paths.get(appLocation, "uploads");
-            Path picturePath = path.resolve(userDTO.getId());
-
-            if (picture != null) {
-                if (Files.notExists(path)) {
-                    Files.createDirectory(path);
-                }
-
-                Files.deleteIfExists(picturePath);
-                picture.write(picturePath.toAbsolutePath().toString());
-
-                if (Files.notExists(picturePath)) {
-                    throw new ResponseStatusException(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to save the picture");
-                }
-            } else {
-                Files.deleteIfExists(picturePath);
-            }
-
-            connection.commit();
             resp.setStatus(204);
-        } catch (SQLException e) {
+        } catch (ResponseStatusException e) {
+            throw e;
+        } catch (Throwable e) {
             throw new ResponseStatusException(500, e.getMessage(), e);
-        } finally {
-            try {
-                if (!connection.getAutoCommit()) {
-                    connection.rollback();
-                    connection.setAutoCommit(true);
-                }
-                connection.close();
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
         }
-
     }
 
     private UserDTO getUser(HttpServletRequest req) {
