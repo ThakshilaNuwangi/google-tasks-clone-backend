@@ -4,28 +4,18 @@ import jakarta.json.bind.Jsonb;
 import jakarta.json.bind.JsonbBuilder;
 import lk.ijse.dep8.tasks.dto.UserDTO;
 import lk.ijse.dep8.tasks.service.UserService;
-import lk.ijse.dep8.tasks.util.HttpResponseErrorMsg;
 import lk.ijse.dep8.tasks.util.HttpServlet2;
 import lk.ijse.dep8.tasks.util.ResponseStatusException;
-import org.apache.commons.codec.digest.DigestUtils;
 
 import javax.annotation.Resource;
 import javax.servlet.ServletException;
-import javax.servlet.annotation.MultipartConfig;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Part;
 import javax.sql.DataSource;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.UUID;
 import java.util.logging.Logger;
 
 @WebServlet(name = "UserServlet")
@@ -58,7 +48,7 @@ public class UserServlet extends HttpServlet2 {
             throw new ResponseStatusException(HttpServletResponse.SC_BAD_REQUEST, "Invalid email or email is empty");
         } else if (password == null || password.trim().isEmpty()) {
             throw new ResponseStatusException(HttpServletResponse.SC_BAD_REQUEST, "Invalid password or password is empty");
-        } else if (picture != null && (picture.getSize()==0 || !picture.getContentType().startsWith("image"))) {
+        } else if (picture != null && (picture.getSize() == 0 || !picture.getContentType().startsWith("image"))) {
             throw new ResponseStatusException(HttpServletResponse.SC_BAD_REQUEST, "Invalid picture");
         }
 
@@ -71,9 +61,10 @@ public class UserServlet extends HttpServlet2 {
             }
 
             String pictureUrl = null;
-            if (picture != null){
+            if (picture != null) {
                 pictureUrl = req.getScheme() + "://" + req.getServerName() + ":"
-                        + req.getServerPort() + req.getContextPath()+ "/uploads/";;
+                        + req.getServerPort() + req.getContextPath() + "/uploads/";
+                ;
             }
             UserDTO user = new UserDTO(null, name, email, password, pictureUrl);
 
@@ -85,7 +76,8 @@ public class UserServlet extends HttpServlet2 {
 
             Jsonb jsonb = JsonbBuilder.create();
             jsonb.toJson(user, resp.getWriter());
-
+        } catch (ResponseStatusException e) {
+            throw e;
         } catch (Throwable e) {
             throw new ResponseStatusException(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to register the user", e);
         }
@@ -105,7 +97,7 @@ public class UserServlet extends HttpServlet2 {
         try (Connection connection = pool.getConnection()) {
             new UserService().deleteUser(connection, user.getId(), getServletContext().getRealPath("/"));
             resp.setStatus(HttpServletResponse.SC_NO_CONTENT);
-        }catch (ResponseStatusException e) {
+        } catch (ResponseStatusException e) {
             throw e;
         } catch (Throwable e) {
             throw new ResponseStatusException(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage(), e);
@@ -129,7 +121,7 @@ public class UserServlet extends HttpServlet2 {
             throw new ResponseStatusException(HttpServletResponse.SC_BAD_REQUEST, "Invalid name or name is empty");
         } else if (password == null || password.trim().isEmpty()) {
             throw new ResponseStatusException(HttpServletResponse.SC_BAD_REQUEST, "Invalid password or password is empty");
-        } else if (picture != null && (picture.getSize()==0 || !picture.getContentType().startsWith("image"))) {
+        } else if (picture != null && (picture.getSize() == 0 || !picture.getContentType().startsWith("image"))) {
             throw new ResponseStatusException(HttpServletResponse.SC_BAD_REQUEST, "Invalid picture");
         }
 
@@ -152,11 +144,11 @@ public class UserServlet extends HttpServlet2 {
     }
 
     private UserDTO getUser(HttpServletRequest req) {
-        if (!(req.getPathInfo() != null && (req.getPathInfo().replaceAll("/","").length()==36))){
+        if (!(req.getPathInfo() != null && (req.getPathInfo().replaceAll("/", "").length() == 36))) {
             throw new ResponseStatusException(404, "Invalid User ID");
         }
 
-        String userId = req.getPathInfo().replaceAll("/","");
+        String userId = req.getPathInfo().replaceAll("/", "");
 
         try (Connection connection = pool.getConnection()) {
             if (!new UserService().existsUser(connection, userId)) {
@@ -164,7 +156,8 @@ public class UserServlet extends HttpServlet2 {
             } else {
                 return new UserService().getUser(connection, userId);
             }
-
+        } catch (ResponseStatusException e) {
+            throw e;
         } catch (Throwable e) {
             throw new ResponseStatusException(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to fetch the user info", e);
         }
