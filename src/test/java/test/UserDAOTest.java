@@ -1,6 +1,5 @@
 package test;
 
-import lk.ijse.dep8.tasks.dao.OldUserDAO;
 import lk.ijse.dep8.tasks.dto.UserDTO;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;

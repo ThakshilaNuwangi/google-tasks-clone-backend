@@ -1,6 +1,5 @@
 package lk.ijse.dep8.tasks.service;
 
-import lk.ijse.dep8.tasks.dao.OldUserDAO;
 import lk.ijse.dep8.tasks.dto.UserDTO;
 import org.apache.commons.codec.digest.DigestUtils;
 
