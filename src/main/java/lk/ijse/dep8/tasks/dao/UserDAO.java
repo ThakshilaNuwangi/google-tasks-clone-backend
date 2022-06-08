@@ -56,7 +56,7 @@ public class UserDAO {
         }
     }
 
-    public void deleteByUserId(String userId) {
+    public void deleteUserById(String userId) {
         try {
             PreparedStatement stm = connection.prepareStatement("DELETE FROM user WHERE id=?");
             stm.setString(1, userId);

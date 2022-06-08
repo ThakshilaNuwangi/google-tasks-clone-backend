@@ -1,15 +1,18 @@
 package lk.ijse.dep8.tasks.dao;
 
+import lk.ijse.dep8.tasks.dao.exception.DataAccessException;
 import lk.ijse.dep8.tasks.entity.User;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -63,33 +66,62 @@ class UserDAOTest {
         assertEquals(givenUser, savedUser);
     }
 
-    @Order(2)
-    @Test
-    void existsUserById() {
-        System.out.println("existsUserById");
+    @ValueSource(strings = {"U001", "U002", "U100"})
+    @ParameterizedTest
+    void existsById(String givenUserId) {
+        // when
+        boolean result = userDAO.existsById(givenUserId);
+
+        // then
+        if (givenUserId.equals("U100")) {
+            assertFalse(result);
+        } else {
+            assertTrue(result);
+        }
     }
 
     @Order(3)
-    @Test
-    void findUserById() {
-        System.out.println("findUserById");
+    @ValueSource(strings = {"U001", "U002", "U100"})
+    @ParameterizedTest
+    void findUserById(String givenUserId) {
+        // when
+        Optional<User> userWrapper = userDAO.findUserById(givenUserId);
+
+        // then
+        if (givenUserId.equals("U100")) {
+            assertFalse(userWrapper.isPresent());
+        } else {
+            assertTrue(userWrapper.isPresent());
+        }
     }
 
     @Order(4)
     @Test
     void findAllUsers() {
-        System.out.println("findAllUsers");
+        // when
+        List<User> allUsers = userDAO.findAllUsers();
+
+        // then
+        assertTrue(allUsers.size() >= 5);
     }
 
     @Order(5)
-    @Test
-    void deleteUserById() {
-        System.out.println("deleteUserById");
+    @ValueSource(strings = {"U001", "U002", "U100"})
+    @ParameterizedTest
+    void deleteUserById(String givenUserId) {
+        // when
+        if (givenUserId.equals("U100")) {
+            assertThrows(DataAccessException.class, () -> userDAO.deleteUserById(givenUserId));
+        } else {
+            userDAO.deleteUserById(givenUserId);
+        }
+
+        assertFalse(userDAO.existsById(givenUserId));
     }
 
     @Order(6)
     @Test
     void countUsers() {
-        System.out.println("countUsers");
+        assertTrue(userDAO.countUsers() >= 5);
     }
 }
