@@ -13,7 +13,7 @@ public class Task {
     private String title;
     private String details;
     private int position;
-    private TaskDAO.Status status;
+    private Status status;
     private int taskListId;
 
     public enum Status{
